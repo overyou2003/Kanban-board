@@ -48,7 +48,7 @@ export default function TaskCard({task, index}){
                     autoFocus
                   />
                 ) : (
-                  <h3 onClick={(e) => { e.stopPropagation(); setEditingTitle(true) }}>
+                  <h3 onClick={(e) => { e.stopPropagation(); setEditingTitle(true)}}>
                     {task.title}<FaPencilAlt className='iconUpdateTask' style={{marginLeft : '10px'}}/>
                   </h3>
                 )} 

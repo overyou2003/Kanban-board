@@ -27,11 +27,27 @@ export const useBoards = create(persist((set,get)=>({
   deleteBoard: (boardId) => set(state => ({
   boards: state.boards.filter(b => b.id !== boardId)
   })),
-  addMember: (boardId, email, role='member') => set(state => ({
-    boards: state.boards.map(b => b.id===boardId ? (
-      b.members.some(m=>m.email===email) ? b : { ...b, members: [...b.members, { email, role }] }
-    ) : b)
-  })),
+  addMember: (boardId, email, role='member') => set(state => {
+  const lowerEmail = email.trim().toLowerCase()
+  const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/   // ตรวจรูปแบบอีเมล
+  const hasThai = /[ก-๙]/.test(lowerEmail)                       // ห้ามมีภาษาไทย
+  const hasUpper = /[A-Z]/.test(email)                           // ห้ามมีตัวใหญ่
+
+  if (!emailRegex.test(lowerEmail) || hasThai || hasUpper) {
+    alert("กรุณากรอกอีเมลที่ถูกต้อง (ใช้ภาษาอังกฤษ ตัวเล็กเท่านั้น)")
+    return state
+  } 
+  
+  return {
+    boards: state.boards.map(b =>
+      b.id === boardId
+        ? b.members.some(m => m.email === lowerEmail)
+          ? b
+          : { ...b, members: [...b.members, { email: lowerEmail, role }] }
+        : b
+    )
+  }
+}),
   addColumn: (boardId, title) => {
   const newId = uid()
   set(state => ({
