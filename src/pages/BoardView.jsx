@@ -1,13 +1,18 @@
-import { useParams } from 'react-router-dom'
+import { useParams , useNavigate } from 'react-router-dom'
 import { useBoards } from '../store/boards'
 import { useAuth } from '../store/auth'
 import { useMemo, useState } from 'react'
 import Column from '../components/Column'
 import { DragDropContext } from '@hello-pangea/dnd'
+import { FaPencilAlt } from "react-icons/fa";
+import { FaSave } from "react-icons/fa";
+import { MdDelete } from "react-icons/md";
+import { useEffect } from 'react'
 
 export default function BoardView(){
   const { id } = useParams()
-  const { boards, addColumn, createTask, moveTask, addMember, renameBoard } = useBoards()
+  const navigate = useNavigate()
+  const { boards, addColumn, createTask, moveTask, addMember, renameBoard , deleteBoard } = useBoards()
   const { currentUser } = useAuth()
   const board = useMemo(()=> boards.find(b => b.id === id), [boards,id])
   const [colName,setColName] = useState('')
@@ -16,6 +21,22 @@ export default function BoardView(){
   const [inviteEmail,setInviteEmail] = useState('')
   const [editingName, setEditingName] = useState(false)
   const [newName, setNewName] = useState(board.name)
+  const onAddColumn = () => {
+    const name = colName.trim()
+    if (!name) return
+    const newId = addColumn(board.id, name)  
+    setColName("")
+    setSelectedColId(newId)                   
+  }
+
+  useEffect(() => {
+  const ids = board.columns.map(c => c.id)
+    if (ids.length === 0) {
+      setSelectedColId("")       
+    } else if (!ids.includes(selectedColId)) {
+      setSelectedColId(ids[0])
+    }
+  }, [board.columns, selectedColId])
 
   if(!board) return <div className="container" style={{paddingTop:24}}><div className="card">Board not found</div></div>
 
@@ -48,23 +69,33 @@ export default function BoardView(){
               {board.name}
             </h2>
           )}
+
+          <button className="btn" onClick={()=>setEditingName(true)}>{editingName ? <FaSave /> : <FaPencilAlt/>}</button>
           <span className="small">• {board.members.length} members</span>
         </div>
         <div className="row" style={{gap:8}}>
           <input className="input" placeholder="Invite by email" value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)} />
           <button className="btn" onClick={()=>{ if(inviteEmail.trim()){ addMember(board.id, inviteEmail.trim(), 'member'); setInviteEmail('') } }}>Invite</button>
+          <button 
+          className="btn delete" 
+          onClick={()=> {
+            if (confirm(`คุณต้องการลบบอร์ด "${board.name}" จริง ๆ ใช่หรือไม่?`)) {
+                  deleteBoard(board.id)
+                  navigate("/boards")
+                }
+          }}><MdDelete/></button>
         </div>
       </div>
 
       <div className="row" style={{gap:12, marginTop:12}}>
         <input className="input" placeholder="New column name" value={colName} onChange={e=>setColName(e.target.value)} />
-        <button className="btn" onClick={()=>{ if(colName.trim()){ addColumn(board.id, colName.trim()); setColName('') } }}>Add Column</button>
+        <button className="btn" onClick={onAddColumn}>Add Column</button>
 
         <select className="input" value={selectedColId} onChange={e=>setSelectedColId(e.target.value)}>
           {board.columns.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
         </select>
         <input className="input" style={{flex:1}} placeholder="New task title" value={newTaskTitle} onChange={e=>setNewTaskTitle(e.target.value)} />
-        <button className="btn primary" onClick={()=>{
+        <button className="btn primary" disabled={!selectedColId} onClick={()=>{
           if(!newTaskTitle.trim()) return
           createTask(board.id, selectedColId, { title: newTaskTitle.trim(), assignee: currentUser.email })
           setNewTaskTitle('')

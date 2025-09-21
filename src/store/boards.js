@@ -24,14 +24,24 @@ export const useBoards = create(persist((set,get)=>({
   renameBoard: (boardId, name) => set(state => ({
     boards: state.boards.map(b => b.id === boardId ? { ...b, name } : b)
   })),
+  deleteBoard: (boardId) => set(state => ({
+  boards: state.boards.filter(b => b.id !== boardId)
+  })),
   addMember: (boardId, email, role='member') => set(state => ({
     boards: state.boards.map(b => b.id===boardId ? (
       b.members.some(m=>m.email===email) ? b : { ...b, members: [...b.members, { email, role }] }
     ) : b)
   })),
-  addColumn: (boardId, title) => set(state => ({
-    boards: state.boards.map(b => b.id===boardId ? { ...b, columns: [...b.columns, { id: uid(), title, taskIds: [] }] } : b)
-  })),
+  addColumn: (boardId, title) => {
+  const newId = uid()
+  set(state => ({
+    boards: state.boards.map(b => b.id === boardId
+      ? { ...b, columns: [...b.columns, { id: newId, title, taskIds: [] }] }
+      : b
+    )
+  }))
+  return newId
+  },
   renameColumn: (boardId, colId, title) => set(state => ({
     boards: state.boards.map(b => b.id===boardId ? {
       ...b, columns: b.columns.map(c => c.id===colId ? { ...c, title } : c)
@@ -70,6 +80,24 @@ export const useBoards = create(persist((set,get)=>({
       ...b,
       tasks: { ...b.tasks, [taskId]: { ...b.tasks[taskId], ...patch } }
     } : b)
+  })),
+  deleteTask: (boardId, taskId) => set(state => ({
+    boards: state.boards.map(b => {
+      if (b.id !== boardId) return b
+
+      const colWithTask = b.columns.find(c => c.taskIds.includes(taskId))
+      const { [taskId]: _, ...restTasks } = b.tasks
+
+      return {
+        ...b,
+        tasks: restTasks,
+        columns: b.columns.map(c =>
+          colWithTask && c.id === colWithTask.id
+            ? { ...c, taskIds: c.taskIds.filter(id => id !== taskId) }
+            : c
+        )
+      }
+    })
   })),
   moveTask: (boardId, fromColId, toColId, taskId, toIndex) => set(state => ({
     boards: state.boards.map(b => {
