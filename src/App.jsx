@@ -6,7 +6,6 @@ import BoardView from './pages/BoardView'
 import { useAuth } from './store/auth'
 import Navbar from './components/Navbar'
 import { Toaster } from 'react-hot-toast'
-import { HashRouter as Router } from 'react-router-dom'
 
 function Guard({children}){
   const { currentUser } = useAuth()
