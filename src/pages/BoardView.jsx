@@ -97,7 +97,7 @@ export default function BoardView(){
             <>
               <input className="input" placeholder="Invite by email" value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)} />
               <button className="btn" onClick={handleInvite}>Invite</button>
-              <button className="btn delete" onClick={()=> {
+              <button className="btn delete" onClick={()=> { 
                 if (confirm(`คุณต้องการลบบอร์ด "${board.name}" จริง ๆ ใช่หรือไม่?`)) {
                   deleteBoard(board.id)
                   navigate("/boards")
