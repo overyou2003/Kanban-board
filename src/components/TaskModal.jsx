@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { useAuth } from '../store/auth'
 import { RiDeleteBin5Fill } from "react-icons/ri";
+import toast from 'react-hot-toast'
 
 export default function TaskModal({ task, onClose }) {
   const { id } = useParams()               // boardId จาก path
@@ -88,7 +89,6 @@ export default function TaskModal({ task, onClose }) {
           <button
             className="btn primary"
             onClick={() => {
-              // ✅ validate assignee ว่าต้องเป็นสมาชิกบอร์ด
               if (assignee && !board.members.some(m => m.email === assignee)) {
                 alert('Assignee ต้องเป็นสมาชิกในบอร์ดเท่านั้น')
                 return
@@ -101,7 +101,10 @@ export default function TaskModal({ task, onClose }) {
                 assignee,
                 dueDate
               })
+        
               onClose()
+              toast.success('คุณเพิ่มสมาชิกผู้รับผิดชอบใน Task เรียบร้อย')
+
             }}
           >
             Save

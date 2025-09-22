@@ -8,6 +8,7 @@ import { FaPencilAlt } from "react-icons/fa";
 import { FaSave } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
 import { useEffect } from 'react'
+import toast from 'react-hot-toast'
 
 export default function BoardView(){
   const { id } = useParams()
