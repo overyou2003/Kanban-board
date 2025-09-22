@@ -1,153 +1,150 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import toast from 'react-hot-toast'
 
-function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36) }
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2)
 
-export const useBoards = create(persist((set,get)=>({
-  boards: [], // {id, name, members:[{email, role}], columns:[{id,title,taskIds:[]}], tasks:{[taskId]: Task}}
+export const useBoards = create(persist((set, get) => ({
+  boards: [],
+
   createBoard: (name, ownerEmail) => {
-    const b = {
-      id: uid(),
+    const id = uid()
+    const board = {
+      id,
       name,
+      owner: ownerEmail,
       members: [{ email: ownerEmail, role: 'owner' }],
       columns: [
         { id: uid(), title: 'To Do', taskIds: [] },
         { id: uid(), title: 'In Progress', taskIds: [] },
-        { id: uid(), title: 'Done', taskIds: [] }
+        { id: uid(), title: 'Done', taskIds: [] },
       ],
       tasks: {},
-      activity: [] // simple log
+      notifications: []
     }
-    set(state => ({ boards: [...state.boards, b] }))
-    return b.id
+    set(state => ({ boards: [...state.boards, board] }))
+    return id
   },
+
   renameBoard: (boardId, name) => set(state => ({
     boards: state.boards.map(b => b.id === boardId ? { ...b, name } : b)
   })),
+
   deleteBoard: (boardId) => set(state => ({
-  boards: state.boards.filter(b => b.id !== boardId)
+    boards: state.boards.filter(b => b.id !== boardId)
   })),
 
-  addMember: (boardId, email, role='member') => set(state => {
-    const lowerEmail = email.trim().toLowerCase()
-    const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/   // ตรวจรูปแบบอีเมล
-    const hasThai = /[ก-๙]/.test(lowerEmail)                       // ห้ามมีภาษาไทย
-    const hasUpper = /[A-Z]/.test(email)                           // ห้ามมีตัวใหญ่
-
-    if (!emailRegex.test(lowerEmail) || hasThai || hasUpper) {
-      //alert("กรุณากรอกอีเมลที่ถูกต้อง (ใช้ภาษาอังกฤษ ตัวเล็กเท่านั้น)")
-      toast.error("กรุณากรอกอีเมลที่ถูกต้อง");
-      return state
-    } 
-
-    
-    
-    toast.success("เพิ่มสมาชิกเข้าบอร์ดสำเร็จ");
-    return {  
-      boards: state.boards.map(b =>
-        b.id === boardId
-          ? b.members.some(m => m.email === lowerEmail)
-            ? b
-            : { ...b, members: [...b.members, { email: lowerEmail, role }] }
-          : b
-      )
-    }
-  }),
   addColumn: (boardId, title) => {
-  const newId = uid()
-  set(state => ({
-    boards: state.boards.map(b => b.id === boardId
-      ? { ...b, columns: [...b.columns, { id: newId, title, taskIds: [] }] }
-      : b
-    )
-  }))
-  return newId
+    const newId = uid()
+    set(state => ({
+      boards: state.boards.map(b => b.id === boardId
+        ? { ...b, columns: [...b.columns, { id: newId, title, taskIds: [] }] }
+        : b)
+    }))
+    return newId
   },
-  renameColumn: (boardId, colId, title) => set(state => ({
-    boards: state.boards.map(b => b.id===boardId ? {
-      ...b, columns: b.columns.map(c => c.id===colId ? { ...c, title } : c)
+
+  renameColumn: (boardId, columnId, title) => set(state => ({
+    boards: state.boards.map(b => b.id === boardId ? {
+      ...b,
+      columns: b.columns.map(c => c.id === columnId ? ({ ...c, title }) : c)
     } : b)
   })),
-  deleteColumn: (boardId, colId) => set(state => ({
-    boards: state.boards.map(b => b.id===boardId ? { ...b, columns: b.columns.filter(c=>c.id!==colId) } : b)
+
+  deleteColumn: (boardId, columnId) => set(state => ({
+    boards: state.boards.map(b => {
+      if (b.id !== boardId) return b
+      const idsToRemove = b.columns.find(c => c.id === columnId)?.taskIds || []
+      const tasks = Object.fromEntries(Object.entries(b.tasks).filter(([id]) => !idsToRemove.includes(id)))
+      return {
+        ...b,
+        tasks,
+        columns: b.columns.filter(c => c.id !== columnId)
+      }
+    })
   })),
-  createTask: (boardId, colId, data) => set(state => {
-    const taskId = uid()
-    const task = {
-      id: taskId,
-      title: data.title || 'Untitled',
-      description: data.description || '',
-      type: data.type || 'task',        // task | bug | story
-      labels: data.labels || [],
-      assignee: data.assignee || '',
-      dueDate: data.dueDate || '',
-      comments: [],
-      history: [{ type:'create', when: Date.now() }]
-    }
-    return {
-      boards: state.boards.map(b => {
-        if(b.id!==boardId) return b
-        return {
-          ...b,
-          tasks: { ...b.tasks, [taskId]: task },
-          columns: b.columns.map(c => c.id===colId ? { ...c, taskIds: [...c.taskIds, taskId] } : c),
-          activity: [...b.activity, { at: Date.now(), text: `Create task "${task.title}"` }]
-        }
-      })
-    }
-  }),
+
+  createTask: (boardId, columnId, data) => set(state => ({
+    boards: state.boards.map(b => {
+      if (b.id !== boardId) return b
+      const id = uid()
+      const task = {
+        id,
+        title: data.title,
+        description: data.description || '',
+        type: data.type || 'task',
+        labels: data.labels || [],
+        assignee: data.assignee || '',
+        dueDate: data.dueDate || '',
+        comments: []
+      }
+      return {
+        ...b,
+        tasks: { ...b.tasks, [id]: task },
+        columns: b.columns.map(c => c.id === columnId ? { ...c, taskIds: [...c.taskIds, id] } : c)
+      }
+    })
+  })),
+
   updateTask: (boardId, taskId, patch) => set(state => ({
-    boards: state.boards.map(b => b.id===boardId ? {
+    boards: state.boards.map(b => b.id === boardId ? {
       ...b,
       tasks: { ...b.tasks, [taskId]: { ...b.tasks[taskId], ...patch } }
     } : b)
   })),
+
+  // ไม่ต้องรับ columnId: หาเองจาก taskId
   deleteTask: (boardId, taskId) => set(state => ({
     boards: state.boards.map(b => {
       if (b.id !== boardId) return b
-
-      const colWithTask = b.columns.find(c => c.taskIds.includes(taskId))
-      const { [taskId]: _, ...restTasks } = b.tasks
-
+      const col = b.columns.find(c => c.taskIds.includes(taskId))
+      const { [taskId]: _, ...rest } = b.tasks
       return {
         ...b,
-        tasks: restTasks,
-        columns: b.columns.map(c =>
-          colWithTask && c.id === colWithTask.id
-            ? { ...c, taskIds: c.taskIds.filter(id => id !== taskId) }
-            : c
-        )
+        tasks: rest,
+        columns: b.columns.map(c => col && c.id === col.id ? { ...c, taskIds: c.taskIds.filter(id => id !== taskId) } : c)
       }
     })
-  })),
-  moveTask: (boardId, fromColId, toColId, taskId, toIndex) => set(state => ({
-    boards: state.boards.map(b => {
-      if(b.id!==boardId) return b
-      const cols = b.columns.map(c => {
-        if(c.id===fromColId){ return { ...c, taskIds: c.taskIds.filter(id => id!==taskId) } }
-        return c
-      }).map(c => {
-        if(c.id===toColId){
-          const ids = [...c.taskIds]
-          const idx = typeof toIndex === 'number' ? toIndex : ids.length
-          ids.splice(idx, 0, taskId)
-          return { ...c, taskIds: ids }
-        }
-        return c
-      })
-      return { ...b, columns: cols, activity: [...b.activity, { at: Date.now(), text: `Move task ${taskId}` }] }
-    })
-  })),
-  addComment: (boardId, taskId, text, authorEmail) => set(state => ({
-    boards: state.boards.map(b => b.id===boardId ? {
-      ...b, tasks: {
-        ...b.tasks,
-        [taskId]: { ...b.tasks[taskId], comments: [...b.tasks[taskId].comments, { id: uid(), text, authorEmail, at: Date.now() }] }
-      }
-    } : b)
   })),
 
-  
+  moveTask: (boardId, sourceColId, destColId, taskId, destIndex) => set(state => ({
+    boards: state.boards.map(b => {
+      if (b.id !== boardId) return b
+      const cols = b.columns.map(c => ({ ...c }))
+      const s = cols.find(c => c.id === sourceColId)
+      const d = cols.find(c => c.id === destColId)
+      if (!s || !d) return b
+      s.taskIds = s.taskIds.filter(id => id !== taskId)
+      d.taskIds = [...d.taskIds.slice(0, destIndex), taskId, ...d.taskIds.slice(destIndex)]
+      return { ...b, columns: cols }
+    })
+  })),
+
+  addComment: (boardId, taskId, text, authorEmail) => set(state => ({
+    boards: state.boards.map(b => {
+      if (b.id !== boardId) return b
+      const t = b.tasks[taskId]
+      const c = { id: uid(), text, authorEmail, at: Date.now() }
+      return { ...b, tasks: { ...b.tasks, [taskId]: { ...t, comments: [...(t.comments || []), c] } } }
+    })
+  })),
+
+  addMember: (boardId, email, role = 'member') => {
+    const lower = (email || '').trim().toLowerCase()
+    const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/
+    const hasThai = /[ก-๙]/.test(lower)
+    const hasUpper = /[A-Z]/.test(email || '')
+
+    if (!emailRegex.test(lower) || hasThai || hasUpper) return false
+      set(state => ({
+        boards: state.boards.map(b =>
+          b.id === boardId
+            ? (b.members.some(m => m.email === lower)
+                ? b
+                : { ...b, members: [...b.members, { email: lower, role }] })
+            : b
+        )
+      }))
+    return true
+  }
 
 }), { name: 'boards-store' }))
