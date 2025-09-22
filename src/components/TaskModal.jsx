@@ -92,31 +92,6 @@ export default function TaskModal({ task, onClose }){
             onClose()
           }}>Save</button>
         </div>
-
-        <hr className="sep" />
-        <div className="col">
-          <label>Add comment</label>
-          <div className="row">
-            <input className="input" style={{flex:1}} value={comment} onChange={e=>setComment(e.target.value)} placeholder="Write a comment..." />
-            <button className="btn" onClick={()=>{
-              if(!comment.trim()) return
-              addComment(id, task.id, comment.trim(), currentUser?.email || 'anon')
-              setComment('')
-            }}>Post</button>
-          </div>
-        </div>
-
-        <div className="spacer"></div>
-        <div className="col">
-          <label>Comments</label>
-          {(task.comments||[]).length===0 && <div className="small">No comments yet</div>}
-          {(task.comments||[]).map(c => (
-            <div key={c.id} className="card" style={{padding:'8px', background:'#0f0f17'}}>
-              <div className="small" style={{marginBottom:4}}>{c.authorEmail} • {new Date(c.at).toLocaleString()}</div>
-              <div>{c.text}</div>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   )
