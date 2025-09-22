@@ -50,7 +50,7 @@ export default function BoardView(){
   return (
     <div className="container" style={{paddingTop:16}}>
       <div className="card row" style={{justifyContent:'space-between', alignItems:'center'}}>
-        <div className="row" style={{gap:10}}>
+        <div className="row" style={{gap:12}}>
           {editingName ? (
             <input
               className="input"
@@ -73,10 +73,12 @@ export default function BoardView(){
           <button className="btn" onClick={()=>setEditingName(true)}>{editingName ? <FaSave /> : <FaPencilAlt/>}</button>
           <span className="small">• {board.members.length} members</span>
         </div>
-        <div className="row" style={{gap:8}}>
+        <div className="row" style={{gap:12 , flex:1 , justifyContent:'center'}}>
           <input className="input" placeholder="Invite by email" value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)} />
           <button className="btn" onClick={()=>{ if(inviteEmail.trim()){ addMember(board.id, inviteEmail.trim(), 'member'); setInviteEmail('') } }}>Invite</button>
-          <button 
+        </div>
+        <button 
+          style={{gap:12}}
           className="btn delete" 
           onClick={()=> {
             if (confirm(`คุณต้องการลบบอร์ด "${board.name}" จริง ๆ ใช่หรือไม่?`)) {
@@ -84,7 +86,6 @@ export default function BoardView(){
                   navigate("/boards")
                 }
           }}><MdDelete/></button>
-        </div>
       </div>
 
       <div className="row" style={{gap:12, marginTop:12}}>
