@@ -2,14 +2,15 @@ import { Draggable } from '@hello-pangea/dnd'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import TaskModal from './TaskModal'
-import { FaPencilAlt } from "react-icons/fa";
-import { RiDeleteBin5Fill } from "react-icons/ri";
+import { FaPencilAlt } from "react-icons/fa"
+import { RiDeleteBin5Fill } from "react-icons/ri"
 import { useBoards } from '../store/boards'
 
 export default function TaskCard({task, index}){
   const [open,setOpen] = useState(false)
   const { id } = useParams()
   const { deleteTask , updateTask } = useBoards()
+
   const handleDelete = () => {
     if (confirm(`คุณต้องการลบ Task "${task.title}" จริง ๆ ใช่หรือไม่ ?`)) {
       deleteTask(id, task.id)
@@ -25,6 +26,7 @@ export default function TaskCard({task, index}){
     }
     setEditingTitle(false)
   }
+
   return (
     <div className='taskContainer'>
       <Draggable draggableId={String(task.id)} index={index}>
@@ -41,22 +43,23 @@ export default function TaskCard({task, index}){
                     onKeyDown={e => {
                       if (e.key === "Enter") e.currentTarget.blur()
                       if (e.key === "Escape") {
-                        setEditingName(false)
+                        setEditingTitle(false)
                         setNewTitle(task.title)
                       }
                     }}
                     autoFocus
+                    onMouseDown={e=>e.stopPropagation()}
+                    onClick={e=>e.stopPropagation()}
                   />
                 ) : (
-                  <h3 onClick={(e) => { e.stopPropagation(); setEditingTitle(true)}}>
+                  <h3 onClick={(e) => { e.stopPropagation(); setEditingTitle(true) }}>
                     {task.title}<FaPencilAlt className='iconUpdateTask' style={{marginLeft : '10px'}}/>
                   </h3>
-                )} 
+                )}
               </div>
               <div onClick={(e) => {e.stopPropagation(); handleDelete();}} style={{cursor:'pointer'}}>
                 <RiDeleteBin5Fill className='iconDelTask'/>
               </div>
-    
             </div>
             <div className="spacer"></div>
             <div className="row" style={{flexWrap:'wrap', gap:6}}>
